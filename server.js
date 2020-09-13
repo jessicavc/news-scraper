@@ -26,7 +26,7 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
 
 //api routes
 app.get("/", function(req,res){
-    db.article.find({saved : false}).then(result => {
+    db.Article.find({saved : false}).then(result => {
         res.render('index', {
             result: result.map(result => result.toJSON())
         })
@@ -34,7 +34,7 @@ app.get("/", function(req,res){
 });
 
 app.get("/scrape", function(req,res){
-    axios.get("https://www.npr.org/").then(function (response) {
+    axios.get("https://www.theonion.com/").then(function (response) {
         var $ = cheerio.load(response.data);
         var results = [];
         $(".story-wrap").each(function (i, element) {
@@ -53,9 +53,9 @@ app.get("/scrape", function(req,res){
             }
         });
         db.Article.create(results)
-            .then(function (dbarticle) {
+            .then(function (dbArticle) {
                 res.render("index", { dbArticle });
-                console.log(dbarticle);
+                console.log(dbArticle);
             })
             .catch(function (err) {
                 console.log(err);
@@ -77,7 +77,7 @@ app.put("/update/:id", function (req, res) {
 });
 
 app.put("/newnote/:id", function(req, res) {
-    db.article.updateOne({ _id: req.body._id }, { $push: { note: req.body.note }}, function(err, result) {
+    db.Article.updateOne({ _id: req.body._id }, { $push: { note: req.body.note }}, function(err, result) {
         console.log(result)
         if (result.changedRows == 0) {
             return res.status(404).end();
@@ -89,7 +89,7 @@ app.put("/newnote/:id", function(req, res) {
 
 app.put("/unsave/:id", function(req, res) {
     console.log(req.body)
-    db.article.updateOne({ _id: req.params.id }, { $set: { saved: false }}, function(err, result) {
+    db.Article.updateOne({ _id: req.params.id }, { $set: { saved: false }}, function(err, result) {
         if (result.changedRows == 0) {
             return res.status(404).end();
         } else {
@@ -100,8 +100,8 @@ app.put("/unsave/:id", function(req, res) {
 
 app.delete("/articles", function (req, res) {
     db.Article.remove({})
-        .then(function (dbarticle) {
-            res.json(dbarticle);
+        .then(function (dbArticle) {
+            res.json(dbArticle);
         })
         .catch(function (err) {
             res.json(err);
@@ -109,10 +109,10 @@ app.delete("/articles", function (req, res) {
 });
 
 app.get("/newnote/:id", function(req, res) {
-    db.article.findOne({ _id: req.params.id })
+    db.Article.findOne({ _id: req.params.id })
       .populate("note")
-      .then(function(dbarticle) {
-        res.json(dbarticle);
+      .then(function(dbArticle) {
+        res.json(dbArticle);
       })
       .catch(function(err) {
         res.json(err);
@@ -120,12 +120,12 @@ app.get("/newnote/:id", function(req, res) {
   });
 
 app.post("/newnote/:id", function(req, res) {
-    db.note.create(req.body)
+    db.Note.create(req.body)
     .then(function(dbNote) {
-      return db.article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
+      return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
     })
-    .then(function(dbarticle) {
-      res.json(dbarticle);
+    .then(function(dbArticle) {
+      res.json(dbArticle);
     })
     .catch(function(err) {
       res.json(err);
